@@ -2,13 +2,55 @@
 #include <SoftwareSerial.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_PWMServoDriver.h"
+#include "Timer.h"
+#include <NewPing.h>
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 
 Adafruit_DCMotor *m1 = AFMS.getMotor(1);
 Adafruit_DCMotor *m2 = AFMS.getMotor(2);
 
-SoftwareSerial ss = SoftwareSerial(6, 7);
+SoftwareSerial ss = SoftwareSerial(6, 5);
+int pingPin = 7;
+
+
+
+Timer t;
+
+long microsecondsToCentimeters(long microseconds)
+{
+  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
+  // The ping travels out and back, so to find the distance of the
+  // object we take half of the distance travelled.
+  return microseconds / 29 / 2;
+}
+
+void sendDistance() {
+  // establish variables for duration of the ping, 
+  // and the distance result in inches and centimeters:
+  long duration, inches, cm;
+
+  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
+  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+  pinMode(pingPin, OUTPUT);
+  digitalWrite(pingPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(pingPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(pingPin, LOW);
+
+  // The same pin is used to read the signal from the PING))): a HIGH
+  // pulse whose duration is the time (in microseconds) from the sending
+  // of the ping to the reception of its echo off of an object.
+  pinMode(pingPin, INPUT);
+  duration = pulseIn(pingPin, HIGH);
+  
+  cm = microsecondsToCentimeters(duration);
+  
+  Serial.println(cm);
+  
+  ss.write(cm);
+}
 
 void setup() {
     Serial.begin(9600);           // set up Serial library at 9600 bps
@@ -23,6 +65,8 @@ void setup() {
     
     m1->run(FORWARD);
     m2->run(FORWARD);
+
+    t.every(500, sendDistance);
 }
 
 void drive(int b) {
@@ -88,6 +132,9 @@ void turn(int b) {
 
 void loop() {
     int b;
+    
+    t.update();
+    
     if (ss.available() > 0) {
         b = ss.read();
         
