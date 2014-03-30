@@ -25,10 +25,12 @@ long microsecondsToCentimeters(long microseconds)
   return microseconds / 29 / 2;
 }
 
+long cm;
+
 void sendDistance() {
   // establish variables for duration of the ping, 
   // and the distance result in inches and centimeters:
-  long duration, inches, cm;
+  long duration, inches, new_cm;
 
   // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
@@ -45,11 +47,13 @@ void sendDistance() {
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
   
-  cm = microsecondsToCentimeters(duration);
+  new_cm = microsecondsToCentimeters(duration);
   
-  Serial.println(cm);
-  
-  ss.write(cm);
+  if (new_cm != cm) {
+    cm = new_cm;
+    Serial.println(cm);
+    ss.write(cm);
+  }
 }
 
 void setup() {
@@ -82,8 +86,8 @@ void drive(int b) {
             speed = min(((64 - b) * 4), 255);
         }
         
-        m1->setSpeed(speed);
-        m2->setSpeed(speed);
+        m1->setSpeed(100);
+        m2->setSpeed(100);
         
         if (b > 64) {
             Serial.print("drive forward ");
